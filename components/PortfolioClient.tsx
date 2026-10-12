@@ -240,6 +240,7 @@ export default function PortfolioClient() {
   const [contentRefreshing, setContentRefreshing] = useState(false);
   const [contentAttempt, setContentAttempt] = useState(0);
   const [usingCachedContent, setUsingCachedContent] = useState(false);
+  const [usingDefaultFallback, setUsingDefaultFallback] = useState(false);
   const [contentLoaded, setContentLoaded] = useState(false);
   const [languageLoaded, setLanguageLoaded] = useState(false);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
@@ -287,16 +288,25 @@ export default function PortfolioClient() {
   useEffect(() => {
     const controller = new AbortController();
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryAfterFailure: ReturnType<typeof setTimeout> | undefined;
     let running = false;
     // A stalled provider cannot leave the visitor trapped in the animation.
     let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
     const cached = readConfirmedContent();
     if (cached) { setContent(cached); setContentLoaded(true); setUsingCachedContent(true); }
+    function showDefaultFallback() {
+      if (cached) return;
+      setContent(defaultPortfolio);
+      setContentLoaded(true);
+      setUsingCachedContent(false);
+      setUsingDefaultFallback(true);
+    }
     async function load() {
       if (running || controller.signal.aborted) return;
       running = true;
       clearTimeout(recoveryTimer);
-      recoveryTimer = setTimeout(() => setContentError(true), 14000);
+      clearTimeout(retryAfterFailure);
+      recoveryTimer = setTimeout(() => { showDefaultFallback(); setContentError(true); }, 14000);
       setContentError(false);
       setContentRefreshing(true);
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -308,6 +318,7 @@ export default function PortfolioClient() {
           clearTimeout(recoveryTimer);
           setContentLoaded(true);
           setUsingCachedContent(false);
+          setUsingDefaultFallback(false);
           if (confirmed.source === "saved") rememberContent(confirmed.content);
           else forgetConfirmedContent();
           setContentRefreshing(false);
@@ -322,12 +333,18 @@ export default function PortfolioClient() {
           });
         }
       }
-      if (!controller.signal.aborted) { setContentError(true); setContentRefreshing(false); }
+      clearTimeout(recoveryTimer);
+      if (!controller.signal.aborted) {
+        showDefaultFallback();
+        setContentError(true);
+        setContentRefreshing(false);
+        retryAfterFailure = setTimeout(() => setContentAttempt(n => n + 1), 30000);
+      }
       running = false;
     }
     void load();
     window.addEventListener("online", load);
-    return () => { controller.abort(); clearTimeout(retryTimer); clearTimeout(recoveryTimer); window.removeEventListener("online", load); };
+    return () => { controller.abort(); clearTimeout(retryTimer); clearTimeout(retryAfterFailure); clearTimeout(recoveryTimer); window.removeEventListener("online", load); };
   }, [contentAttempt]);
 
   const configuredIds = useMemo(
@@ -492,8 +509,10 @@ export default function PortfolioClient() {
 
   return (
     <main className="portfolioSite">
-      {usingCachedContent && <aside className="contentStatus" role="status">
-        <span>{language === "pt" ? (contentRefreshing ? "Atualizando o portfólio…" : "Mostrando a última versão disponível. Não foi possível verificar atualizações.") : (contentRefreshing ? "Updating portfolio…" : "Showing the last available version. Updates could not be checked.")}</span>
+      {(usingCachedContent || usingDefaultFallback) && <aside className="contentStatus" role="status">
+        <span>{usingDefaultFallback
+          ? (language === "pt" ? (contentRefreshing ? "Atualizando o portfólio…" : "Versão padrão temporária. As alterações salvas estão indisponíveis.") : (contentRefreshing ? "Updating portfolio…" : "Temporary default version. Saved changes are unavailable."))
+          : (language === "pt" ? (contentRefreshing ? "Atualizando o portfólio…" : "Mostrando a última versão disponível. Não foi possível verificar atualizações.") : (contentRefreshing ? "Updating portfolio…" : "Showing the last available version. Updates could not be checked."))}</span>
         {!contentRefreshing && <button onClick={() => setContentAttempt(n => n + 1)}>{language === "pt" ? "Tentar novamente" : "Try again"}</button>}
       </aside>}
       <a className="skipLink" href={projectAnchor}>{language === "pt" ? "Ir para os projetos" : "Skip to projects"}</a>

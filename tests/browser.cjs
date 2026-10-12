@@ -32,8 +32,8 @@ const server=require('child_process').spawn(process.execPath,['node_modules/next
  await page.goto('http://127.0.0.1:3000');await page.getByRole('link',{name:'@saved_owner'}).waitFor();assert.equal(calls,3);assert.equal(await page.evaluate(()=>window.sawDefault),false);console.log('PASS automatic recovery after two 503s, no default flash');
  mode='offline';await page.reload();await page.getByRole('link',{name:'@saved_owner'}).waitFor();await page.getByText('Mostrando a última versão disponível.',{exact:false}).waitFor();console.log('PASS confirmed cached content survives offline reload');
  assert.equal(await page.locator('.emailCard').getAttribute('href'),'mailto:Simohayha931@hotmail.com');console.log('PASS new email with legacy saved content and cache');
- await page.evaluate(()=>localStorage.removeItem('portfolio-confirmed-content-v1'));await page.reload();await page.getByRole('heading',{name:'Não foi possível carregar o portfólio'}).waitFor();assert.equal(await page.locator('.brand').count(),0);
- mode='ok';await page.getByRole('button',{name:'Tentar novamente'}).click();await page.getByRole('link',{name:'@saved_owner'}).waitFor();console.log('PASS first visit error state and manual retry');
+ await page.evaluate(()=>localStorage.removeItem('portfolio-confirmed-content-v1'));await page.reload();await page.getByRole('link',{name:'@your_username'}).waitFor();await page.getByText('Versão padrão temporária.',{exact:false}).waitFor();assert.equal(await page.locator('.portfolioLoader').count(),0);
+ mode='ok';await page.getByRole('button',{name:'Tentar novamente'}).click();await page.getByRole('link',{name:'@saved_owner'}).waitFor();console.log('PASS first visit shows temporary default and manual retry restores saved content');
  await page.evaluate(()=>localStorage.removeItem('portfolio-confirmed-content-v1'));mode='slow';await page.reload();await page.getByRole('link',{name:'@saved_owner'}).waitFor({timeout:16000});assert.equal(await page.evaluate(()=>window.sawDefault),false);console.log('PASS response slower than old six-second timeout');
  for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}console.log('PASS layout 320/390/768/1440');
  for(const nextMode of ['default','unchanged']) {
@@ -60,7 +60,8 @@ const server=require('child_process').spawn(process.execPath,['node_modules/next
  mode='empty';await page.reload();await page.getByRole('link',{name:'@saved_owner'}).waitFor();for(const id of ['builder','programming','pricing'])assert.equal(await page.locator('#'+id+', a[href="#'+id+'"]').count(),0);
  console.log('PASS empty sections do not produce broken navigation');
  mode='stalled';await page.evaluate(()=>localStorage.clear());await page.reload();
- await page.getByRole('heading',{name:'Não foi possível carregar o portfólio'}).waitFor({timeout:16000});
+ await page.getByRole('link',{name:'@your_username'}).waitFor({timeout:16000});
+ await page.getByText('Versão padrão temporária.',{exact:false}).waitFor();
  assert.equal(await page.locator('a[href="mailto:Simohayha931@hotmail.com"]').count(),1);
  mode='ok';await page.getByRole('button',{name:'Tentar novamente'}).click();await page.getByRole('link',{name:'@saved_owner'}).waitFor();console.log('PASS stalled provider exits loader and can recover');
  let adminFails=true,statsWrites=0;
