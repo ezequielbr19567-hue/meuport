@@ -10,7 +10,7 @@ Comece por `MELHORIAS-V13.md`. A V13 corrige o retorno indevido ao conteúdo pad
 
 # Versão V12
 
-Veja `VALIDACAO.md` para os testes e limitações desta versão. As prévias estão em `previews/`.
+Leia `MELHORIAS-V12.md` para as mudanças, pesquisa, configuração e orientações de conteúdo. Veja `VALIDACAO.md` para os testes e limitações. As prévias estão em `previews/`.
 
 # Portfólio Roblox Studio — V10
 
@@ -59,7 +59,3 @@ Isso evita o "flash" do conteúdo padrão antes das configurações salvas no Su
 A transição usa a mesma identidade visual vermelho/azul do portfólio e some suavemente quando os dados estão prontos.
 
 Não é necessário executar SQL novo ou alterar variáveis de ambiente.
-
-## Vercel
-
-Configure **Root Directory** como `luau-portfolio-base` no projeto da Vercel. O código Next.js, `package.json` e `package-lock.json` estão nessa pasta.
